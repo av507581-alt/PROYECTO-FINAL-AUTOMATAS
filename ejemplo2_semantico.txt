@@ -1,0 +1,8 @@
+LUZ luz_principal ON;
+TEMPERATURA 22;
+SI TEMPERATURA > 28
+ENTONCES APAGAR luz_principal;
+FIN
+
+LUZ luz_principal ON;
+LUZ luz_laboratorio_2 OFF;

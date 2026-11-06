@@ -1,0 +1,12 @@
+INCIDENTE fuga_gas;
+SENSOR sensor_03;
+NIVEL 9;
+REPORTAR fuga_gas;
+LUZ luz_a ON
+TEMPERATURA 22 @;
+APAGAR luz_b;
+ENCENDER sensor_03;
+3abc;
+SI TEMPERATURA > 200
+ENTONCES MOSTRAR "alerta;
+FIN

@@ -1,0 +1,83 @@
+
+%option noyywrap yylineno never-interactive
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "parser.tab.h"
+
+void report_error(const char *tipo, int line, const char *fmt, ...);
+
+int cur_line  = 1;   /* línea del último token entregado al parser   */
+int prev_line = 1;   /* línea del token anterior                     */
+int at_eof    = 0;   /* 1 cuando se llegó al fin de archivo          */
+
+/* Entrega un token al parser y lo registra en la salida (para la GUI) */
+#define TOK(t) do {                                              \
+        prev_line = cur_line;  cur_line = yylineno;              \
+        yylloc.first_line = yylloc.last_line = yylineno;         \
+        printf("TOKEN|%d|%s|%s\n", yylineno, #t, yytext);        \
+        return t;                                                \
+    } while (0)
+%}
+
+LETRA     [A-Za-z_]
+DIGITO    [0-9]
+IDENT     {LETRA}({LETRA}|{DIGITO})*
+
+%%
+
+[ \t\r]+                    { /* espacios: se ignoran */ }
+\n                          { /* salto de línea: yylineno se actualiza solo */ }
+"//".*                      { /* comentario de una línea */ }
+
+"INCIDENTE"                 { TOK(INCIDENTE); }
+"SENSOR"                    { TOK(SENSOR); }
+"NIVEL"                     { TOK(NIVEL); }
+"REPORTAR"                  { TOK(REPORTAR); }
+"LUZ"                       { TOK(LUZ); }
+"TEMPERATURA"               { TOK(TEMPERATURA); }
+"SI"                        { TOK(SI); }
+"ENTONCES"                  { TOK(ENTONCES); }
+"ENCENDER"                  { TOK(ENCENDER); }
+"APAGAR"                    { TOK(APAGAR); }
+"MOSTRAR"                   { TOK(MOSTRAR); }
+"FIN"                       { TOK(FIN); }
+"ON"                        { TOK(ON); }
+"OFF"                       { TOK(OFF); }
+
+{IDENT}                     { yylval.s = strdup(yytext); TOK(IDENT); }
+
+-?{DIGITO}+(\.{DIGITO}+)?   { yylval.num = atof(yytext); TOK(NUMERO); }
+
+{DIGITO}+{LETRA}({LETRA}|{DIGITO})* {
+        report_error("LEXICO", yylineno,
+            "Identificador mal formado '%s' (no puede iniciar con dígito)", yytext);
+    }
+
+\"[^\"\n]*\"                { yylval.s = strdup(yytext); TOK(CADENA); }
+\"[^\"\n]*                  {
+        report_error("LEXICO", yylineno, "Cadena sin cerrar: faltan comillas finales");
+    }
+
+";"                         { TOK(SEMI); }
+">="                        { TOK(GE); }
+"<="                        { TOK(LE); }
+"=="                        { TOK(EQ); }
+"!="                        { TOK(NE); }
+">"                         { TOK(GT); }
+"<"                         { TOK(LT); }
+
+[\x80-\xFF]+                {
+        report_error("LEXICO", yylineno,
+            "Carácter no reconocido (no ASCII, ¿acento o símbolo especial?) '%s'", yytext);
+    }
+
+<<EOF>>                     { at_eof = 1; return 0; }
+
+.                           {
+        report_error("LEXICO", yylineno, "Carácter no reconocido '%s'", yytext);
+    }
+
+%%
